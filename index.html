@@ -8,81 +8,63 @@
 </head>
 <body>
 
-  <section class="hero">
+  <div class="app">
 
-    <div class="hero__glow hero__glow--left"></div>
-    <div class="hero__glow hero__glow--right"></div>
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="topbar__left">
+        <div class="topbar__logo">
+          <span class="topbar__logo-icon">✦</span>
+          brandheiss.Agency
+        </div>
+      </div>
+      <div class="topbar__center">
+        Gebäudereinigung · Angebotsassistent
+      </div>
+      <div class="topbar__right">
+        <span class="topbar__status">
+          <span class="topbar__status-dot"></span>
+          Bereit
+        </span>
+      </div>
+    </header>
 
-    <div class="hero__badge">
-      <span class="hero__badge-dot"></span>
-      Angebot in 2 Minuten
+    <!-- Progress Bar -->
+    <div class="progress-bar">
+      <div class="progress-bar__fill" id="progressBar"></div>
     </div>
 
-    <h1 class="hero__headline">
-      Jetzt kostenloses<br />
-      <span class="hero__headline-gradient">Angebot anfordern</span>
-    </h1>
+    <!-- Messages -->
+    <main class="messages" id="chatMessages"></main>
 
-    <p class="hero__subline">
-      Beantworte ein paar kurze Fragen – wir melden uns innerhalb von 24 Stunden.
-    </p>
-
-    <!-- Chat / Form Window -->
-    <div class="chat">
-
-      <div class="chat__header">
-        <div class="chat__header-dots">
-          <span class="dot dot--red"></span>
-          <span class="dot dot--yellow"></span>
-          <span class="dot dot--green"></span>
-        </div>
-        <div class="chat__header-title">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M12 8v4l3 3"/>
-          </svg>
-          Angebotsanfrage
-        </div>
-        <div class="chat__step-counter" id="stepCounter">0 / 7</div>
-      </div>
-
-      <!-- Progress bar -->
-      <div class="chat__progress">
-        <div class="chat__progress-bar" id="progressBar"></div>
-      </div>
-
-      <!-- Messages -->
-      <div class="chat__messages" id="chatMessages"></div>
-
-      <!-- Footer: adaptive (buttons hint OR text input) -->
-      <div class="chat__footer" id="chatFooter">
-        <div class="chat__hint" id="chatHint"></div>
-
-        <div class="chat__input-wrapper" id="inputWrapper" style="display:none">
+    <!-- Input Footer -->
+    <footer class="composer" id="chatFooter">
+      <div class="composer__inner">
+        <div class="composer__wrapper" id="inputWrapper">
           <input
-            class="chat__input"
-            type="text"
+            class="composer__input"
             id="chatInput"
+            type="text"
             autocomplete="off"
           />
-          <button class="chat__send" id="sendBtn" aria-label="Weiter">
+          <button class="composer__send" id="sendBtn" aria-label="Senden">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="22" y1="2" x2="11" y2="13"/>
               <polygon points="22 2 15 22 11 13 2 9 22 2"/>
             </svg>
           </button>
         </div>
-
-        <button class="chat__skip" id="skipBtn" style="display:none">
+        <button class="composer__skip" id="skipBtn" style="display:none">
           Überspringen →
         </button>
+        <p class="composer__disclaimer">
+          Schritt <span id="stepCounter">0 / 7</span> · KI kann Fehler machen. Dies ist eine Angebotsanfrage.
+        </p>
       </div>
+    </footer>
 
-    </div>
+  </div>
 
-  </section>
-
-  <!-- EmailJS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="chat.js"></script>
 </body>

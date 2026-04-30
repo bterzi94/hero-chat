@@ -1,21 +1,15 @@
-// ─────────────────────────────────────────────
-// EmailJS Konfiguration
-// Anleitung: emailjs.com → kostenlosen Account erstellen
-// Dann Service ID, Template ID und Public Key eintragen
-// ─────────────────────────────────────────────
+// ─── EmailJS ─────────────────────────────────────────────────────────────────
 const EMAILJS_SERVICE_ID  = "service_rj7foe9";
 const EMAILJS_TEMPLATE_ID = "template_if6gwra";
 const EMAILJS_PUBLIC_KEY  = "3dX3_Jiv3TbjDgaDZ";
 
 emailjs.init(EMAILJS_PUBLIC_KEY);
 
-// ─────────────────────────────────────────────
-// Formular-Schritte
-// ─────────────────────────────────────────────
+// ─── Formular-Schritte ────────────────────────────────────────────────────────
 const steps = [
   {
     id: "typ",
-    question: "Hallo! 👋 Schön, dass du da bist.\nWas soll gereinigt werden?",
+    question: "Was soll gereinigt werden?",
     type: "buttons",
     options: ["Büro / Gewerbe", "Privathaushalt", "Industrie / Lager", "Treppenhaus"],
   },
@@ -39,7 +33,7 @@ const steps = [
   },
   {
     id: "name",
-    question: "Super! Wie lautet dein Name?",
+    question: "Wie lautet dein Name?",
     type: "text",
     placeholder: "Dein Vor- und Nachname …",
   },
@@ -51,36 +45,29 @@ const steps = [
   },
   {
     id: "anmerkung",
-    question: "Hast du noch Anmerkungen oder Sonderwünsche? (optional)",
+    question: "Hast du noch Anmerkungen oder Sonderwünsche?",
     type: "text",
     placeholder: "Hier eingeben …",
     optional: true,
   },
 ];
 
-// ─────────────────────────────────────────────
-// State
-// ─────────────────────────────────────────────
+// ─── State ────────────────────────────────────────────────────────────────────
 const answers = {};
 let currentStep = 0;
 let busy = false;
 
-// ─────────────────────────────────────────────
-// DOM Refs
-// ─────────────────────────────────────────────
+// ─── DOM ──────────────────────────────────────────────────────────────────────
 const messagesEl   = document.getElementById("chatMessages");
 const inputWrapper = document.getElementById("inputWrapper");
 const chatInput    = document.getElementById("chatInput");
 const sendBtn      = document.getElementById("sendBtn");
-const chatHint     = document.getElementById("chatHint");
 const skipBtn      = document.getElementById("skipBtn");
 const progressBar  = document.getElementById("progressBar");
 const stepCounter  = document.getElementById("stepCounter");
 const chatFooter   = document.getElementById("chatFooter");
 
-// ─────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function scrollToBottom() {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
@@ -91,24 +78,15 @@ function updateProgress() {
   stepCounter.textContent = `${currentStep} / ${steps.length}`;
 }
 
-function avatarAI() {
-  return `<div class="message__avatar">AI</div>`;
-}
-function avatarUser() {
-  return `<div class="message__avatar">👤</div>`;
-}
-
-function formatText(text) {
-  return text.replace(/\n/g, "<br>");
-}
-
 function appendMessage(role, text) {
   const el = document.createElement("div");
   el.className = `message message--${role}`;
-  el.innerHTML = `
-    ${role === "ai" ? avatarAI() : avatarUser()}
-    <div class="message__bubble">${formatText(text)}</div>
-  `;
+
+  const avatarHTML = role === "ai"
+    ? `<div class="message__avatar" style="background:linear-gradient(135deg,#7c5cfc,#60a5fa);color:#fff;">✦</div>`
+    : `<div class="message__avatar">👤</div>`;
+
+  el.innerHTML = `${avatarHTML}<div class="message__bubble">${text.replace(/\n/g, "<br>")}</div>`;
   messagesEl.appendChild(el);
   scrollToBottom();
 }
@@ -118,8 +96,8 @@ function showTyping() {
   el.className = "typing";
   el.id = "typingIndicator";
   el.innerHTML = `
-    ${avatarAI()}
-    <div class="typing__dots">
+    <div class="message__avatar" style="background:linear-gradient(135deg,#7c5cfc,#60a5fa);color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;flex-shrink:0;margin-bottom:2px;">✦</div>
+    <div class="typing__bubble">
       <div class="typing__dot"></div>
       <div class="typing__dot"></div>
       <div class="typing__dot"></div>
@@ -130,35 +108,38 @@ function showTyping() {
   return el;
 }
 
-function removeTyping() {
-  const el = document.getElementById("typingIndicator");
-  if (el) el.remove();
+// ─── Input lock / unlock ──────────────────────────────────────────────────────
+function lockInput(placeholder) {
+  chatInput.disabled    = true;
+  chatInput.placeholder = placeholder || "Wähle eine Option oben aus …";
+  sendBtn.disabled      = true;
+  skipBtn.style.display = "none";
+  inputWrapper.classList.add("is-locked");
 }
 
-function clearOptions() {
-  const el = document.getElementById("optionsContainer");
-  if (el) el.remove();
+function unlockInput(step) {
+  chatInput.disabled    = false;
+  chatInput.type        = step.type === "email" ? "email" : "text";
+  chatInput.placeholder = step.placeholder;
+  chatInput.value       = "";
+  sendBtn.disabled      = false;
+  inputWrapper.classList.remove("is-locked");
+  if (step.optional) skipBtn.style.display = "block";
+  setTimeout(() => chatInput.focus(), 80);
 }
 
-function resetFooter() {
-  inputWrapper.style.display = "none";
-  skipBtn.style.display      = "none";
-  chatHint.textContent       = "";
-}
-
-// ─────────────────────────────────────────────
-// Form Logic
-// ─────────────────────────────────────────────
+// ─── Schritt anzeigen ─────────────────────────────────────────────────────────
 function askStep(index) {
   if (busy) return;
   busy = true;
-  const step = steps[index];
 
-  resetFooter();
-  clearOptions();
+  const step = steps[index];
+  const old = document.getElementById("optionsContainer");
+  if (old) old.remove();
+
+  lockInput("Einen Moment …");
 
   const typingEl = showTyping();
-  const delay    = 700 + Math.random() * 400;
 
   setTimeout(() => {
     typingEl.remove();
@@ -167,12 +148,12 @@ function askStep(index) {
     if (step.type === "buttons") {
       showOptionButtons(step);
     } else {
-      showTextInput(step);
+      unlockInput(step);
     }
 
     updateProgress();
     busy = false;
-  }, delay);
+  }, 650 + Math.random() * 350);
 }
 
 function showOptionButtons(step) {
@@ -184,90 +165,65 @@ function showOptionButtons(step) {
     const btn = document.createElement("button");
     btn.className   = "chat__option";
     btn.textContent = opt;
-    btn.addEventListener("click", () => handleButtonAnswer(step, opt));
+    btn.addEventListener("click", () => handleButtonAnswer(step, opt, container));
     container.appendChild(btn);
   });
 
   messagesEl.appendChild(container);
-  chatHint.textContent = "Bitte wähle eine Option aus.";
+  lockInput("⬆  Bitte wähle eine Option aus …");
   scrollToBottom();
 }
 
-function showTextInput(step) {
-  chatInput.placeholder = step.placeholder;
-  chatInput.type        = step.type === "email" ? "email" : "text";
-  chatInput.value       = "";
-  inputWrapper.style.display = "flex";
-
-  if (step.optional) {
-    skipBtn.style.display = "block";
-  }
-
-  setTimeout(() => chatInput.focus(), 50);
-}
-
-function handleButtonAnswer(step, answer) {
-  clearOptions();
-  resetFooter();
+// ─── Antworten ────────────────────────────────────────────────────────────────
+function handleButtonAnswer(step, answer, container) {
+  container.remove();
   answers[step.id] = answer;
   appendMessage("user", answer);
   goNext();
 }
 
 function handleTextAnswer() {
-  if (busy) return;
+  if (busy || chatInput.disabled) return;
+
   const step = steps[currentStep];
   const val  = chatInput.value.trim();
 
   if (!val && !step.optional) {
-    chatInput.classList.add("shake");
-    setTimeout(() => chatInput.classList.remove("shake"), 400);
+    chatInput.focus();
     return;
   }
 
   answers[step.id] = val || "–";
-  resetFooter();
+  lockInput("Einen Moment …");
   appendMessage("user", val || "Keine Anmerkungen");
-  goNext();
-}
-
-function handleSkip() {
-  const step = steps[currentStep];
-  answers[step.id] = "–";
-  resetFooter();
-  appendMessage("user", "Keine Anmerkungen");
   goNext();
 }
 
 function goNext() {
   currentStep++;
   if (currentStep >= steps.length) {
-    setTimeout(sendEmail, 400);
+    setTimeout(sendEmail, 500);
   } else {
-    setTimeout(() => askStep(currentStep), 400);
+    setTimeout(() => askStep(currentStep), 380);
   }
 }
 
-// ─────────────────────────────────────────────
-// Email senden
-// ─────────────────────────────────────────────
+// ─── E-Mail senden ────────────────────────────────────────────────────────────
 async function sendEmail() {
-  resetFooter();
-  chatHint.textContent = "Anfrage wird gesendet …";
-
-  const typingEl = showTyping();
+  lockInput("Anfrage wird gesendet …");
   updateProgress();
+  const typingEl = showTyping();
 
   try {
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
       to_email:    "Info@brandheiss.Agency",
-      reply_to:    answers.email    || "–",
-      typ:         answers.typ      || "–",
-      flaeche:     answers.flaeche  || "–",
-      haeufigkeit: answers.haeufigkeit || "–",
-      zeitraum:    answers.zeitraum || "–",
-      name:        answers.name     || "–",
-      anmerkung:   answers.anmerkung || "–",
+      reply_to:    answers.email        || "–",
+      typ:         answers.typ          || "–",
+      flaeche:     answers.flaeche      || "–",
+      haeufigkeit: answers.haeufigkeit  || "–",
+      zeitraum:    answers.zeitraum     || "–",
+      name:        answers.name         || "–",
+      anmerkung:   answers.anmerkung    || "–",
     });
 
     typingEl.remove();
@@ -284,7 +240,7 @@ async function sendEmail() {
       "ai",
       "Ups, da ist etwas schiefgelaufen. 😕\nBitte schreib uns direkt an: Info@brandheiss.Agency"
     );
-    chatHint.textContent = "";
+    lockInput("Bitte versuche es später erneut.");
   }
 }
 
@@ -303,20 +259,33 @@ function showSuccess() {
   scrollToBottom();
 }
 
-// ─────────────────────────────────────────────
-// Events
-// ─────────────────────────────────────────────
+// ─── Events ───────────────────────────────────────────────────────────────────
 sendBtn.addEventListener("click", handleTextAnswer);
-skipBtn.addEventListener("click", handleSkip);
+skipBtn.addEventListener("click", () => {
+  answers[steps[currentStep].id] = "–";
+  lockInput("Einen Moment …");
+  appendMessage("user", "Keine Anmerkungen");
+  goNext();
+});
 chatInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
+  if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     handleTextAnswer();
   }
 });
 
-// ─────────────────────────────────────────────
-// Start
-// ─────────────────────────────────────────────
+// ─── Begrüßung + Start ────────────────────────────────────────────────────────
+lockInput("Einen Moment …");
 updateProgress();
-setTimeout(() => askStep(0), 600);
+
+setTimeout(() => {
+  const typingEl = showTyping();
+  setTimeout(() => {
+    typingEl.remove();
+    appendMessage(
+      "ai",
+      "Hallo! 👋 Schön, dass du hier bist.\nIch helfe dir in wenigen Schritten, ein kostenloses Angebot für deine Gebäudereinigung anzufordern."
+    );
+    setTimeout(() => askStep(0), 500);
+  }, 900);
+}, 500);
