@@ -3,36 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Hero Chat</title>
+  <title>Gebäudereinigung – Kostenloses Angebot</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-  <!-- HERO SECTION -->
   <section class="hero">
 
-    <!-- Background glow effects -->
     <div class="hero__glow hero__glow--left"></div>
     <div class="hero__glow hero__glow--right"></div>
 
-    <!-- Top Badge -->
     <div class="hero__badge">
       <span class="hero__badge-dot"></span>
-      Powered by AI
+      Angebot in 2 Minuten
     </div>
 
-    <!-- Headline -->
     <h1 class="hero__headline">
-      Dein intelligenter<br />
-      <span class="hero__headline-gradient">KI-Assistent</span>
+      Jetzt kostenloses<br />
+      <span class="hero__headline-gradient">Angebot anfordern</span>
     </h1>
 
     <p class="hero__subline">
-      Stell jede Frage – erhalte sofort präzise Antworten.
+      Beantworte ein paar kurze Fragen – wir melden uns innerhalb von 24 Stunden.
     </p>
 
-    <!-- Chat Window -->
+    <!-- Chat / Form Window -->
     <div class="chat">
+
       <div class="chat__header">
         <div class="chat__header-dots">
           <span class="dot dot--red"></span>
@@ -44,41 +41,49 @@
             <circle cx="12" cy="12" r="10"/>
             <path d="M12 8v4l3 3"/>
           </svg>
-          KI Chat — Bereit
+          Angebotsanfrage
         </div>
-        <div style="width:60px"></div>
+        <div class="chat__step-counter" id="stepCounter">0 / 7</div>
       </div>
 
+      <!-- Progress bar -->
+      <div class="chat__progress">
+        <div class="chat__progress-bar" id="progressBar"></div>
+      </div>
+
+      <!-- Messages -->
       <div class="chat__messages" id="chatMessages"></div>
 
-      <div class="chat__footer">
-        <div class="chat__input-wrapper">
+      <!-- Footer: adaptive (buttons hint OR text input) -->
+      <div class="chat__footer" id="chatFooter">
+        <div class="chat__hint" id="chatHint"></div>
+
+        <div class="chat__input-wrapper" id="inputWrapper" style="display:none">
           <input
             class="chat__input"
             type="text"
-            placeholder="Schreib eine Nachricht …"
             id="chatInput"
             autocomplete="off"
           />
-          <button class="chat__send" id="sendBtn" aria-label="Senden">
+          <button class="chat__send" id="sendBtn" aria-label="Weiter">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="22" y1="2" x2="11" y2="13"/>
               <polygon points="22 2 15 22 11 13 2 9 22 2"/>
             </svg>
           </button>
         </div>
-        <p class="chat__disclaimer">KI kann Fehler machen. Überprüfe wichtige Informationen.</p>
-      </div>
-    </div>
 
-    <!-- CTA Buttons -->
-    <div class="hero__cta">
-      <a href="#" class="btn btn--primary">Jetzt starten</a>
-      <a href="#" class="btn btn--ghost">Mehr erfahren</a>
+        <button class="chat__skip" id="skipBtn" style="display:none">
+          Überspringen →
+        </button>
+      </div>
+
     </div>
 
   </section>
 
+  <!-- EmailJS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="chat.js"></script>
 </body>
 </html>

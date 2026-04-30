@@ -1,65 +1,115 @@
-// Demo conversation shown on page load
-const demoConversation = [
+// ─────────────────────────────────────────────
+// EmailJS Konfiguration
+// Anleitung: emailjs.com → kostenlosen Account erstellen
+// Dann Service ID, Template ID und Public Key eintragen
+// ─────────────────────────────────────────────
+const EMAILJS_SERVICE_ID  = "YOUR_SERVICE_ID";
+const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
+const EMAILJS_PUBLIC_KEY  = "YOUR_PUBLIC_KEY";
+
+emailjs.init(EMAILJS_PUBLIC_KEY);
+
+// ─────────────────────────────────────────────
+// Formular-Schritte
+// ─────────────────────────────────────────────
+const steps = [
   {
-    role: "ai",
-    text: "Hallo! Ich bin dein KI-Assistent. Wie kann ich dir heute helfen? 👋",
-    delay: 600,
+    id: "typ",
+    question: "Hallo! 👋 Schön, dass du da bist.\nWas soll gereinigt werden?",
+    type: "buttons",
+    options: ["Büro / Gewerbe", "Privathaushalt", "Industrie / Lager", "Treppenhaus"],
   },
   {
-    role: "user",
-    text: "Kannst du mir eine kurze Zusammenfassung über KI schreiben?",
-    delay: 1800,
+    id: "flaeche",
+    question: "Wie groß ist die Fläche?",
+    type: "buttons",
+    options: ["Bis 100 m²", "100 – 300 m²", "300 – 500 m²", "Über 500 m²"],
   },
   {
-    role: "ai",
-    text: "Natürlich! Künstliche Intelligenz (KI) bezeichnet Systeme, die menschenähnliche kognitive Fähigkeiten wie Lernen, Problemlösen und Sprachverständnis nachahmen. Moderne KI basiert auf neuronalen Netzen und riesigen Datensätzen – und wird heute in Medizin, Wissenschaft und Alltag eingesetzt.",
-    delay: 3200,
-    typing: 1400,
+    id: "haeufigkeit",
+    question: "Wie oft soll gereinigt werden?",
+    type: "buttons",
+    options: ["Einmalig", "Wöchentlich", "14-tägig", "Monatlich"],
   },
   {
-    role: "user",
-    text: "Sehr interessant! Was sind die wichtigsten Anwendungsbereiche?",
-    delay: 5400,
+    id: "zeitraum",
+    question: "Wann soll es losgehen?",
+    type: "buttons",
+    options: ["So schnell wie möglich", "Innerhalb eines Monats", "Termin flexibel"],
   },
   {
-    role: "ai",
-    text: "Die wichtigsten Bereiche sind:\n• **Medizin** – Diagnose & Bildanalyse\n• **Sprache** – Übersetzung & Chatbots\n• **Mobilität** – Autonomes Fahren\n• **Kreativität** – Bild-, Musik- & Texterstellung\n\nDie Möglichkeiten wachsen täglich! 🚀",
-    delay: 7200,
-    typing: 1600,
+    id: "name",
+    question: "Super! Wie lautet dein Name?",
+    type: "text",
+    placeholder: "Dein Vor- und Nachname …",
+  },
+  {
+    id: "email",
+    question: "Und deine E-Mail-Adresse?",
+    type: "email",
+    placeholder: "deine@email.de",
+  },
+  {
+    id: "anmerkung",
+    question: "Hast du noch Anmerkungen oder Sonderwünsche? (optional)",
+    type: "text",
+    placeholder: "Hier eingeben …",
+    optional: true,
   },
 ];
 
-const messagesEl = document.getElementById("chatMessages");
-const inputEl    = document.getElementById("chatInput");
-const sendBtn    = document.getElementById("sendBtn");
+// ─────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────
+const answers = {};
+let currentStep = 0;
+let busy = false;
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// DOM Refs
+// ─────────────────────────────────────────────
+const messagesEl   = document.getElementById("chatMessages");
+const inputWrapper = document.getElementById("inputWrapper");
+const chatInput    = document.getElementById("chatInput");
+const sendBtn      = document.getElementById("sendBtn");
+const chatHint     = document.getElementById("chatHint");
+const skipBtn      = document.getElementById("skipBtn");
+const progressBar  = document.getElementById("progressBar");
+const stepCounter  = document.getElementById("stepCounter");
+const chatFooter   = document.getElementById("chatFooter");
 
+// ─────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────
 function scrollToBottom() {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-function avatarFor(role) {
-  return role === "ai"
-    ? `<div class="message__avatar">AI</div>`
-    : `<div class="message__avatar">👤</div>`;
+function updateProgress() {
+  const pct = (currentStep / steps.length) * 100;
+  progressBar.style.width = pct + "%";
+  stepCounter.textContent = `${currentStep} / ${steps.length}`;
+}
+
+function avatarAI() {
+  return `<div class="message__avatar">AI</div>`;
+}
+function avatarUser() {
+  return `<div class="message__avatar">👤</div>`;
 }
 
 function formatText(text) {
-  return text
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\n•/g, "<br>•")
-    .replace(/\n/g, "<br>");
+  return text.replace(/\n/g, "<br>");
 }
 
 function appendMessage(role, text) {
-  const msg = document.createElement("div");
-  msg.className = `message message--${role}`;
-  msg.innerHTML = `
-    ${avatarFor(role)}
+  const el = document.createElement("div");
+  el.className = `message message--${role}`;
+  el.innerHTML = `
+    ${role === "ai" ? avatarAI() : avatarUser()}
     <div class="message__bubble">${formatText(text)}</div>
   `;
-  messagesEl.appendChild(msg);
+  messagesEl.appendChild(el);
   scrollToBottom();
 }
 
@@ -68,7 +118,7 @@ function showTyping() {
   el.className = "typing";
   el.id = "typingIndicator";
   el.innerHTML = `
-    ${avatarFor("ai")}
+    ${avatarAI()}
     <div class="typing__dots">
       <div class="typing__dot"></div>
       <div class="typing__dot"></div>
@@ -85,62 +135,188 @@ function removeTyping() {
   if (el) el.remove();
 }
 
-// ── Demo playback ─────────────────────────────────────────────────────────────
-
-function playDemo(steps, index = 0) {
-  if (index >= steps.length) return;
-  const step = steps[index];
-
-  setTimeout(() => {
-    if (step.role === "ai" && step.typing) {
-      const typingEl = showTyping();
-      setTimeout(() => {
-        typingEl.remove();
-        appendMessage("ai", step.text);
-        playDemo(steps, index + 1);
-      }, step.typing);
-    } else {
-      appendMessage(step.role, step.text);
-      playDemo(steps, index + 1);
-    }
-  }, index === 0 ? step.delay : step.delay - steps[index - 1].delay);
+function clearOptions() {
+  const el = document.getElementById("optionsContainer");
+  if (el) el.remove();
 }
 
-playDemo(demoConversation);
+function resetFooter() {
+  inputWrapper.style.display = "none";
+  skipBtn.style.display      = "none";
+  chatHint.textContent       = "";
+}
 
-// ── Live input ────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// Form Logic
+// ─────────────────────────────────────────────
+function askStep(index) {
+  if (busy) return;
+  busy = true;
+  const step = steps[index];
 
-const aiReplies = [
-  "Das ist eine großartige Frage! Lass mich darüber nachdenken… KI-Systeme lernen aus Daten und werden durch Feedback immer besser.",
-  "Interessant! Moderne Sprachmodelle wie ich basieren auf Transformer-Architekturen und wurden mit Milliarden von Texten trainiert.",
-  "Gute Frage! Ich kann dir dabei helfen – sag mir einfach, was du genau brauchst.",
-  "Das ist ein spannendes Thema! Künstliche Intelligenz entwickelt sich rasant weiter und eröffnet täglich neue Möglichkeiten.",
-  "Super! Ich stehe dir jederzeit zur Verfügung. Was möchtest du als nächstes wissen?",
-];
-let replyIndex = 0;
+  resetFooter();
+  clearOptions();
 
-function sendMessage() {
-  const text = inputEl.value.trim();
-  if (!text) return;
-
-  appendMessage("user", text);
-  inputEl.value = "";
-  inputEl.focus();
-
-  const typing = showTyping();
-  const delay  = 900 + Math.random() * 600;
+  const typingEl = showTyping();
+  const delay    = 700 + Math.random() * 400;
 
   setTimeout(() => {
-    typing.remove();
-    appendMessage("ai", aiReplies[replyIndex % aiReplies.length]);
-    replyIndex++;
+    typingEl.remove();
+    appendMessage("ai", step.question);
+
+    if (step.type === "buttons") {
+      showOptionButtons(step);
+    } else {
+      showTextInput(step);
+    }
+
+    updateProgress();
+    busy = false;
   }, delay);
 }
 
-sendBtn.addEventListener("click", sendMessage);
-inputEl.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
+function showOptionButtons(step) {
+  const container = document.createElement("div");
+  container.className = "chat__options";
+  container.id        = "optionsContainer";
+
+  step.options.forEach((opt) => {
+    const btn = document.createElement("button");
+    btn.className   = "chat__option";
+    btn.textContent = opt;
+    btn.addEventListener("click", () => handleButtonAnswer(step, opt));
+    container.appendChild(btn);
+  });
+
+  messagesEl.appendChild(container);
+  chatHint.textContent = "Bitte wähle eine Option aus.";
+  scrollToBottom();
+}
+
+function showTextInput(step) {
+  chatInput.placeholder = step.placeholder;
+  chatInput.type        = step.type === "email" ? "email" : "text";
+  chatInput.value       = "";
+  inputWrapper.style.display = "flex";
+
+  if (step.optional) {
+    skipBtn.style.display = "block";
+  }
+
+  setTimeout(() => chatInput.focus(), 50);
+}
+
+function handleButtonAnswer(step, answer) {
+  clearOptions();
+  resetFooter();
+  answers[step.id] = answer;
+  appendMessage("user", answer);
+  goNext();
+}
+
+function handleTextAnswer() {
+  if (busy) return;
+  const step = steps[currentStep];
+  const val  = chatInput.value.trim();
+
+  if (!val && !step.optional) {
+    chatInput.classList.add("shake");
+    setTimeout(() => chatInput.classList.remove("shake"), 400);
+    return;
+  }
+
+  answers[step.id] = val || "–";
+  resetFooter();
+  appendMessage("user", val || "Keine Anmerkungen");
+  goNext();
+}
+
+function handleSkip() {
+  const step = steps[currentStep];
+  answers[step.id] = "–";
+  resetFooter();
+  appendMessage("user", "Keine Anmerkungen");
+  goNext();
+}
+
+function goNext() {
+  currentStep++;
+  if (currentStep >= steps.length) {
+    setTimeout(sendEmail, 400);
+  } else {
+    setTimeout(() => askStep(currentStep), 400);
+  }
+}
+
+// ─────────────────────────────────────────────
+// Email senden
+// ─────────────────────────────────────────────
+async function sendEmail() {
+  resetFooter();
+  chatHint.textContent = "Anfrage wird gesendet …";
+
+  const typingEl = showTyping();
+  updateProgress();
+
+  try {
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email:    "Info@brandheiss.Agency",
+      reply_to:    answers.email    || "–",
+      typ:         answers.typ      || "–",
+      flaeche:     answers.flaeche  || "–",
+      haeufigkeit: answers.haeufigkeit || "–",
+      zeitraum:    answers.zeitraum || "–",
+      name:        answers.name     || "–",
+      anmerkung:   answers.anmerkung || "–",
+    });
+
+    typingEl.remove();
+    appendMessage(
+      "ai",
+      `Vielen Dank, ${answers.name || ""}! 🎉\nDeine Anfrage ist bei uns eingegangen. Wir melden uns innerhalb von 24 Stunden bei dir.`
+    );
+    showSuccess();
+
+  } catch (err) {
+    console.error("EmailJS Fehler:", err);
+    typingEl.remove();
+    appendMessage(
+      "ai",
+      "Ups, da ist etwas schiefgelaufen. 😕\nBitte schreib uns direkt an: Info@brandheiss.Agency"
+    );
+    chatHint.textContent = "";
+  }
+}
+
+function showSuccess() {
+  progressBar.style.width  = "100%";
+  stepCounter.textContent  = `${steps.length} / ${steps.length}`;
+  chatFooter.style.display = "none";
+
+  const el = document.createElement("div");
+  el.className = "chat__success";
+  el.innerHTML = `
+    <div class="chat__success-icon">✓</div>
+    <p>Anfrage erfolgreich gesendet!</p>
+  `;
+  messagesEl.appendChild(el);
+  scrollToBottom();
+}
+
+// ─────────────────────────────────────────────
+// Events
+// ─────────────────────────────────────────────
+sendBtn.addEventListener("click", handleTextAnswer);
+skipBtn.addEventListener("click", handleSkip);
+chatInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
     e.preventDefault();
-    sendMessage();
+    handleTextAnswer();
   }
 });
+
+// ─────────────────────────────────────────────
+// Start
+// ─────────────────────────────────────────────
+updateProgress();
+setTimeout(() => askStep(0), 600);
