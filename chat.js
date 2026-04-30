@@ -3,9 +3,9 @@
 // Anleitung: emailjs.com → kostenlosen Account erstellen
 // Dann Service ID, Template ID und Public Key eintragen
 // ─────────────────────────────────────────────
-const EMAILJS_SERVICE_ID  = "YOUR_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
-const EMAILJS_PUBLIC_KEY  = "YOUR_PUBLIC_KEY";
+const EMAILJS_SERVICE_ID  = "service_rj7foe9";
+const EMAILJS_TEMPLATE_ID = "template_if6gwra";
+const EMAILJS_PUBLIC_KEY  = "3dX3_Jiv3TbjDgaDZ";
 
 emailjs.init(EMAILJS_PUBLIC_KEY);
 
