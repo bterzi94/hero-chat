@@ -5,7 +5,7 @@ const EMAILJS_PUBLIC_KEY  = "3dX3_Jiv3TbjDgaDZ";
 
 emailjs.init(EMAILJS_PUBLIC_KEY);
 
-// ─── Formular-Schritte ────────────────────────────────────────────────────────
+// ─── Schritte ────────────────────────────────────────────────────────────────
 const steps = [
   {
     id: "typ",
@@ -52,69 +52,59 @@ const steps = [
   },
 ];
 
-// ─── State ────────────────────────────────────────────────────────────────────
+// ─── State ───────────────────────────────────────────────────────────────────
 const answers = {};
 let currentStep = 0;
 let busy = false;
 
-// ─── DOM ──────────────────────────────────────────────────────────────────────
-const messagesEl   = document.getElementById("chatMessages");
-const inputWrapper = document.getElementById("inputWrapper");
+// ─── DOM ─────────────────────────────────────────────────────────────────────
+const botMessage   = document.getElementById("botMessage");
+const typingEl     = document.getElementById("typingIndicator");
+const inputWrap    = document.getElementById("inputWrap");
 const chatInput    = document.getElementById("chatInput");
 const sendBtn      = document.getElementById("sendBtn");
 const skipBtn      = document.getElementById("skipBtn");
+const optionsRow   = document.getElementById("optionsRow");
+const optionsCont  = document.getElementById("optionsContainer");
+const inputHint    = document.getElementById("inputHint");
 const progressBar  = document.getElementById("progressBar");
-const stepCounter  = document.getElementById("stepCounter");
-const chatFooter   = document.getElementById("chatFooter");
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function scrollToBottom() {
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-}
-
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 function updateProgress() {
-  const pct = (currentStep / steps.length) * 100;
-  progressBar.style.width = pct + "%";
-  stepCounter.textContent = `${currentStep} / ${steps.length}`;
-}
-
-function appendMessage(role, text) {
-  const el = document.createElement("div");
-  el.className = `message message--${role}`;
-
-  const avatarHTML = role === "ai"
-    ? `<div class="message__avatar" style="background:linear-gradient(135deg,#7c5cfc,#60a5fa);color:#fff;">✦</div>`
-    : `<div class="message__avatar">👤</div>`;
-
-  el.innerHTML = `${avatarHTML}<div class="message__bubble">${text.replace(/\n/g, "<br>")}</div>`;
-  messagesEl.appendChild(el);
-  scrollToBottom();
+  progressBar.style.width = ((currentStep / steps.length) * 100) + "%";
 }
 
 function showTyping() {
-  const el = document.createElement("div");
-  el.className = "typing";
-  el.id = "typingIndicator";
-  el.innerHTML = `
-    <div class="message__avatar" style="background:linear-gradient(135deg,#7c5cfc,#60a5fa);color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;flex-shrink:0;margin-bottom:2px;">✦</div>
-    <div class="typing__bubble">
-      <div class="typing__dot"></div>
-      <div class="typing__dot"></div>
-      <div class="typing__dot"></div>
-    </div>
-  `;
-  messagesEl.appendChild(el);
-  scrollToBottom();
-  return el;
+  botMessage.innerHTML = "";
+  botMessage.appendChild(typingEl);
+  typingEl.style.display = "flex";
 }
 
-// ─── Input lock / unlock ──────────────────────────────────────────────────────
+function setBotMessage(text) {
+  typingEl.style.display = "none";
+  botMessage.innerHTML = `<span class="bot-text">${text.replace(/\n/g, "<br>")}</span>`;
+}
+
+function showUserAnswer(text) {
+  // Remove previous user answer if any
+  const prev = document.querySelector(".widget__user-answer");
+  if (prev) prev.remove();
+
+  const el = document.createElement("div");
+  el.className = "widget__user-answer";
+  el.innerHTML = `<div class="widget__user-bubble">${text}</div>`;
+  botMessage.parentNode.insertBefore(el, botMessage);
+}
+
 function lockInput(placeholder) {
   chatInput.disabled    = true;
-  chatInput.placeholder = placeholder || "Wähle eine Option oben aus …";
+  chatInput.placeholder = placeholder || "";
   sendBtn.disabled      = true;
   skipBtn.style.display = "none";
-  inputWrapper.classList.add("is-locked");
+  inputWrap.classList.add("is-locked");
+  inputHint.style.display = "none";
+  optionsRow.style.display = "none";
+  optionsCont.innerHTML    = "";
 }
 
 function unlockInput(step) {
@@ -123,79 +113,73 @@ function unlockInput(step) {
   chatInput.placeholder = step.placeholder;
   chatInput.value       = "";
   sendBtn.disabled      = false;
-  inputWrapper.classList.remove("is-locked");
+  inputWrap.classList.remove("is-locked");
+  inputHint.style.display = "block";
+  optionsRow.style.display = "none";
   if (step.optional) skipBtn.style.display = "block";
   setTimeout(() => chatInput.focus(), 80);
 }
 
-// ─── Schritt anzeigen ─────────────────────────────────────────────────────────
+function showOptions(step) {
+  lockInput("Oder gib direkt ein …");
+  inputHint.style.display  = "block";
+  inputWrap.classList.remove("is-locked");
+  chatInput.disabled        = true;
+  sendBtn.disabled          = true;
+  chatInput.placeholder     = "⬆  Wähle eine Option …";
+
+  optionsCont.innerHTML = "";
+  step.options.forEach((opt) => {
+    const btn = document.createElement("button");
+    btn.className   = "widget__option";
+    btn.textContent = opt;
+    btn.addEventListener("click", () => handleButtonAnswer(step, opt));
+    optionsCont.appendChild(btn);
+  });
+  optionsRow.style.display = "flex";
+}
+
+// ─── Schritt ─────────────────────────────────────────────────────────────────
 function askStep(index) {
   if (busy) return;
   busy = true;
 
-  const step = steps[index];
-  const old = document.getElementById("optionsContainer");
-  if (old) old.remove();
-
   lockInput("Einen Moment …");
-
-  const typingEl = showTyping();
+  showTyping();
 
   setTimeout(() => {
-    typingEl.remove();
-    appendMessage("ai", step.question);
+    const step = steps[index];
+    setBotMessage(step.question);
+    updateProgress();
 
     if (step.type === "buttons") {
-      showOptionButtons(step);
+      showOptions(step);
     } else {
       unlockInput(step);
     }
 
-    updateProgress();
     busy = false;
-  }, 650 + Math.random() * 350);
+  }, 650 + Math.random() * 300);
 }
 
-function showOptionButtons(step) {
-  const container = document.createElement("div");
-  container.className = "chat__options";
-  container.id        = "optionsContainer";
-
-  step.options.forEach((opt) => {
-    const btn = document.createElement("button");
-    btn.className   = "chat__option";
-    btn.textContent = opt;
-    btn.addEventListener("click", () => handleButtonAnswer(step, opt, container));
-    container.appendChild(btn);
-  });
-
-  messagesEl.appendChild(container);
-  lockInput("⬆  Bitte wähle eine Option aus …");
-  scrollToBottom();
-}
-
-// ─── Antworten ────────────────────────────────────────────────────────────────
-function handleButtonAnswer(step, answer, container) {
-  container.remove();
+// ─── Antworten ───────────────────────────────────────────────────────────────
+function handleButtonAnswer(step, answer) {
+  optionsRow.style.display = "none";
+  optionsCont.innerHTML    = "";
   answers[step.id] = answer;
-  appendMessage("user", answer);
+  showUserAnswer(answer);
   goNext();
 }
 
 function handleTextAnswer() {
   if (busy || chatInput.disabled) return;
-
   const step = steps[currentStep];
   const val  = chatInput.value.trim();
-
-  if (!val && !step.optional) {
-    chatInput.focus();
-    return;
-  }
+  if (!val && !step.optional) { chatInput.focus(); return; }
 
   answers[step.id] = val || "–";
   lockInput("Einen Moment …");
-  appendMessage("user", val || "Keine Anmerkungen");
+  showUserAnswer(val || "Keine Anmerkungen");
   goNext();
 }
 
@@ -204,15 +188,15 @@ function goNext() {
   if (currentStep >= steps.length) {
     setTimeout(sendEmail, 500);
   } else {
-    setTimeout(() => askStep(currentStep), 380);
+    setTimeout(() => askStep(currentStep), 400);
   }
 }
 
-// ─── E-Mail senden ────────────────────────────────────────────────────────────
+// ─── E-Mail ──────────────────────────────────────────────────────────────────
 async function sendEmail() {
   lockInput("Anfrage wird gesendet …");
+  showTyping();
   updateProgress();
-  const typingEl = showTyping();
 
   try {
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
@@ -226,66 +210,43 @@ async function sendEmail() {
       anmerkung:   answers.anmerkung    || "–",
     });
 
-    typingEl.remove();
-    appendMessage(
-      "ai",
-      `Vielen Dank, ${answers.name || ""}! 🎉\nDeine Anfrage ist bei uns eingegangen. Wir melden uns innerhalb von 24 Stunden bei dir.`
-    );
-    showSuccess();
+    progressBar.style.width = "100%";
+    setBotMessage(`Vielen Dank, ${answers.name || ""}! 🎉\nDeine Anfrage ist bei uns eingegangen – wir melden uns innerhalb von 24 Stunden bei dir.`);
+
+    const successEl = document.createElement("div");
+    successEl.className = "widget__success";
+    successEl.innerHTML = `<div class="widget__success-icon">✓</div><p>Anfrage erfolgreich gesendet!</p>`;
+    botMessage.parentNode.insertBefore(successEl, inputWrap.parentNode);
+    document.querySelector(".widget__composer").style.display = "none";
+    optionsRow.style.display = "none";
+    document.querySelector(".widget__disclaimer").style.display = "none";
 
   } catch (err) {
     console.error("EmailJS Fehler:", err);
-    typingEl.remove();
-    appendMessage(
-      "ai",
-      "Ups, da ist etwas schiefgelaufen. 😕\nBitte schreib uns direkt an: Info@brandheiss.Agency"
-    );
-    lockInput("Bitte versuche es später erneut.");
+    setBotMessage("Ups, da ist etwas schiefgelaufen. 😕\nBitte schreib uns direkt an: Info@brandheiss.Agency");
   }
 }
 
-function showSuccess() {
-  progressBar.style.width  = "100%";
-  stepCounter.textContent  = `${steps.length} / ${steps.length}`;
-  chatFooter.style.display = "none";
-
-  const el = document.createElement("div");
-  el.className = "chat__success";
-  el.innerHTML = `
-    <div class="chat__success-icon">✓</div>
-    <p>Anfrage erfolgreich gesendet!</p>
-  `;
-  messagesEl.appendChild(el);
-  scrollToBottom();
-}
-
-// ─── Events ───────────────────────────────────────────────────────────────────
+// ─── Events ──────────────────────────────────────────────────────────────────
 sendBtn.addEventListener("click", handleTextAnswer);
 skipBtn.addEventListener("click", () => {
   answers[steps[currentStep].id] = "–";
   lockInput("Einen Moment …");
-  appendMessage("user", "Keine Anmerkungen");
+  showUserAnswer("Keine Anmerkungen");
   goNext();
 });
 chatInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    handleTextAnswer();
-  }
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleTextAnswer(); }
 });
 
-// ─── Begrüßung + Start ────────────────────────────────────────────────────────
+// ─── Start ───────────────────────────────────────────────────────────────────
 lockInput("Einen Moment …");
 updateProgress();
 
 setTimeout(() => {
-  const typingEl = showTyping();
+  showTyping();
   setTimeout(() => {
-    typingEl.remove();
-    appendMessage(
-      "ai",
-      "Hallo! 👋 Schön, dass du hier bist.\nIch helfe dir in wenigen Schritten, ein kostenloses Angebot für deine Gebäudereinigung anzufordern."
-    );
-    setTimeout(() => askStep(0), 500);
+    setBotMessage("Hallo! 👋 Schön, dass du da bist.\nIch helfe dir, in wenigen Schritten ein kostenloses Angebot anzufordern.");
+    setTimeout(() => askStep(0), 800);
   }, 900);
-}, 500);
+}, 400);
