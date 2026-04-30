@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Hero Chat</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- HERO SECTION -->
+  <section class="hero">
+
+    <!-- Background glow effects -->
+    <div class="hero__glow hero__glow--left"></div>
+    <div class="hero__glow hero__glow--right"></div>
+
+    <!-- Top Badge -->
+    <div class="hero__badge">
+      <span class="hero__badge-dot"></span>
+      Powered by AI
+    </div>
+
+    <!-- Headline -->
+    <h1 class="hero__headline">
+      Dein intelligenter<br />
+      <span class="hero__headline-gradient">KI-Assistent</span>
+    </h1>
+
+    <p class="hero__subline">
+      Stell jede Frage – erhalte sofort präzise Antworten.
+    </p>
+
+    <!-- Chat Window -->
+    <div class="chat">
+      <div class="chat__header">
+        <div class="chat__header-dots">
+          <span class="dot dot--red"></span>
+          <span class="dot dot--yellow"></span>
+          <span class="dot dot--green"></span>
+        </div>
+        <div class="chat__header-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 8v4l3 3"/>
+          </svg>
+          KI Chat — Bereit
+        </div>
+        <div style="width:60px"></div>
+      </div>
+
+      <div class="chat__messages" id="chatMessages"></div>
+
+      <div class="chat__footer">
+        <div class="chat__input-wrapper">
+          <input
+            class="chat__input"
+            type="text"
+            placeholder="Schreib eine Nachricht …"
+            id="chatInput"
+            autocomplete="off"
+          />
+          <button class="chat__send" id="sendBtn" aria-label="Senden">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+        <p class="chat__disclaimer">KI kann Fehler machen. Überprüfe wichtige Informationen.</p>
+      </div>
+    </div>
+
+    <!-- CTA Buttons -->
+    <div class="hero__cta">
+      <a href="#" class="btn btn--primary">Jetzt starten</a>
+      <a href="#" class="btn btn--ghost">Mehr erfahren</a>
+    </div>
+
+  </section>
+
+  <script src="chat.js"></script>
+</body>
+</html>
